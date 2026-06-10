@@ -50,8 +50,11 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 // Avoid duplicate entry issues when creating sourcesJar in CI
-tasks.named('sourcesJar', Jar) {
-	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+// Guard in case the sourcesJar task isn't created in this project setup
+tasks.matching { it.name == 'sourcesJar' }.configureEach {
+	if (it instanceof Jar) {
+		it.duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+	}
 }
 
 java {
