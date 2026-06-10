@@ -2,7 +2,6 @@ package com.example;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
-import net.minecraft.client.MinecraftClient;
 
 public class GeminiBot implements ClientModInitializer {
 
