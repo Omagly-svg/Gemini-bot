@@ -27,15 +27,13 @@ loom {
 }
 
 dependencies {
-        // To change the versions see the gradle.properties file
-        minecraft "com.mojang:minecraft:${project.minecraft_version}"
-        mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-
-        implementation "net.fabricmc:fabric-loader:${project.loader_version}"
-        
-        // FIX: Changed from 'implementation' to 'modClientImplementation' 
-        // This forces Loom to give the client folder access to the Fabric API & Minecraft Client
-        modClientImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    
+    // Ensure you are using the modClientImplementation to prevent 
+    // the "package net.minecraft.client does not exist" error.
+    modClientImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 }
 
 
