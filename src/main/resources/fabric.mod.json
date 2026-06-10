@@ -16,7 +16,7 @@
   "environment": "client",
   "entrypoints": {
     "client": [
-      "com.vens.geminimod"
+      "com.vens.GeminiBotClient"
     ]
   },
   "depends": {
