@@ -27,14 +27,17 @@ loom {
 }
 
 dependencies {
-	// To change the versions see the gradle.properties file
-	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings loom.officialMojangMappings()
-	
-	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
-	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
-	
+        // To change the versions see the gradle.properties file
+        minecraft "com.mojang:minecraft:${project.minecraft_version}"
+        mappings loom.officialMojangMappings()
+
+        implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+        
+        // FIX: Changed from 'implementation' to 'modClientImplementation' 
+        // This forces Loom to give the client folder access to the Fabric API & Minecraft Client
+        modClientImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 }
+
 
 processResources {
 	def version = project.version
