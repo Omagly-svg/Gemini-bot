@@ -33,6 +33,7 @@ dependencies {
 	
 	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	implementation "net.fabricmc:sponge-mixin:0.13.3+mixin.0.8.5"
 	
 }
 
