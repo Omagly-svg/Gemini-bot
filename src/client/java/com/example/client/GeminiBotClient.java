@@ -3,7 +3,6 @@ package com.example.client;
 import net.fabricmc.api.ClientModInitializer;
 
 import java.lang.reflect.*;
-import java.net.URLClassLoader;
 import java.util.Locale;
 
 public class GeminiBotClient implements ClientModInitializer {
@@ -75,16 +74,19 @@ public class GeminiBotClient implements ClientModInitializer {
         if (msg == null) return;
         String lower = msg.toLowerCase(Locale.ROOT).trim();
         final String trigger = "hey gemini";
-        if (!lower.startsWith(trigger)) return;
+        int idx = lower.indexOf(trigger);
+        if (idx == -1) return;
 
         // Extract the command part preserving original casing after the trigger
-        String command = msg.substring(trigger.length()).trim();
+        String command = msg.substring(idx + trigger.length()).trim();
+        // strip common separators that might appear right after the trigger
+        command = command.replaceFirst("^[\\s:\\u00BB\\u00A7»≫]+", "").trim();
         if (command.isEmpty()) return;
 
         try {
             // Stop
             if (command.equalsIgnoreCase("stop")) {
-                sendBaritoneCommand("#stop");
+                executeBaritoneCommand("stop");
                 return;
             }
 
@@ -92,9 +94,9 @@ public class GeminiBotClient implements ClientModInitializer {
             if (command.toLowerCase(Locale.ROOT).startsWith("kill ")) {
                 String target = command.substring(5).trim();
                 if (target.equalsIgnoreCase("everyone") || target.equalsIgnoreCase("players") || target.equalsIgnoreCase("all")) {
-                    sendBaritoneCommand("#follow players");
+                    executeBaritoneCommand("follow players");
                 } else if (!target.isEmpty()) {
-                    sendBaritoneCommand("#follow player " + target);
+                    executeBaritoneCommand("follow player " + target);
                 }
                 return;
             }
@@ -103,17 +105,18 @@ public class GeminiBotClient implements ClientModInitializer {
             if (command.toLowerCase(Locale.ROOT).startsWith("mine ")) {
                 String blockPart = command.substring(5).trim();
                 if (!blockPart.isEmpty()) {
-                    String normalized = blockPart.replaceAll("\\s+", "_");
-                    sendBaritoneCommand("#mine " + normalized);
+                    String normalized = blockPart.replaceAll("\\\\s+", "_");
+                    executeBaritoneCommand("mine " + normalized);
                 }
                 return;
             }
 
             // Forward other commands
             if (command.startsWith("#")) {
-                sendBaritoneCommand(command);
+                // strip '#' and execute
+                executeBaritoneCommand(command.substring(1));
             } else {
-                sendBaritoneCommand("#" + command);
+                executeBaritoneCommand(command);
             }
 
         } catch (Exception e) {
@@ -122,9 +125,42 @@ public class GeminiBotClient implements ClientModInitializer {
         }
     }
 
-    private static void sendBaritoneCommand(String cmd) {
+    private static void executeBaritoneCommand(String cmd) {
+        // Try to call Baritone API via reflection first. If that fails, fall back to sending chat message.
         try {
-            // Reflection to obtain MinecraftClient.getInstance() and player.sendChatMessage
+            // Load BaritoneAPI
+            Class<?> baritoneAPIClass = Class.forName("baritone.api.BaritoneAPI");
+            Method getProvider = baritoneAPIClass.getMethod("getProvider");
+            Object provider = getProvider.invoke(null);
+            if (provider != null) {
+                Method getPrimary = provider.getClass().getMethod("getPrimaryBaritone");
+                Object primary = getPrimary.invoke(provider);
+                if (primary != null) {
+                    Method getCmdManager = primary.getClass().getMethod("getCommandManager");
+                    Object cmdManager = getCmdManager.invoke(primary);
+                    if (cmdManager != null) {
+                        Method execute = cmdManager.getClass().getMethod("execute", String.class);
+                        execute.invoke(cmdManager, cmd);
+                        System.out.println("GeminiBot: executed Baritone command -> " + cmd);
+                        return;
+                    }
+                }
+            }
+        } catch (ClassNotFoundException e) {
+            // Baritone not present; will fall back to chat
+            System.out.println("GeminiBot: Baritone API not found on classpath; falling back to chat command: " + cmd);
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            System.err.println("GeminiBot: failed to invoke Baritone API reflectively: " + e.getMessage());
+            e.printStackTrace();
+            System.out.println("GeminiBot: falling back to chat command: " + cmd);
+        }
+
+        // Fallback: send as chat message (prefix with # so Baritone picks it up if present)
+        sendChatCommandFallback(cmd);
+    }
+
+    private static void sendChatCommandFallback(String cmd) {
+        try {
             Class<?> mcClass = Class.forName("net.minecraft.client.MinecraftClient");
             Method getInstance = mcClass.getMethod("getInstance");
             Object mc = getInstance.invoke(null);
@@ -137,7 +173,6 @@ public class GeminiBotClient implements ClientModInitializer {
             try {
                 playerField = mcClass.getField("player");
             } catch (NoSuchFieldException ignored) {
-                // some mappings have different visibility; try declared fields
                 for (Field f : mcClass.getDeclaredFields()) {
                     if (f.getType() != null && f.getName().toLowerCase().contains("player")) {
                         playerField = f;
@@ -176,8 +211,10 @@ public class GeminiBotClient implements ClientModInitializer {
                 return;
             }
 
-            sendChatMessage.invoke(player, cmd);
-            System.out.println("GeminiBot: sent command -> " + cmd);
+            // Ensure the command is prefixed with '#' when sending via chat
+            String chatCmd = cmd.startsWith("#") ? cmd : "#" + cmd;
+            sendChatMessage.invoke(player, chatCmd);
+            System.out.println("GeminiBot: sent chat command -> " + chatCmd);
         } catch (ClassNotFoundException e) {
             System.out.println("GeminiBot: MinecraftClient class not found (not running in client env): " + e.getMessage());
         } catch (Exception e) {
