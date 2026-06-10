@@ -1,4 +1,4 @@
-package com.yourname.geminimod;
+package com.vens.geminimod;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
