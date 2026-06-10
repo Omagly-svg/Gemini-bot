@@ -2,7 +2,6 @@ package com.example.client;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
-import net.minecraft.client.MinecraftClient;
 
 public class GeminiBotClient implements ClientModInitializer {
 
@@ -67,14 +66,50 @@ public class GeminiBotClient implements ClientModInitializer {
     }
 
     private void sendBaritoneCommand(String cmd) {
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (client == null || client.player == null) {
-            System.out.println("GeminiBot: client or player is null, cannot send command: " + cmd);
-            return;
-        }
+        try {
+            // Use reflection so we don't need a compile-time dependency on Minecraft client classes
+            Class<?> mcClass = Class.forName("net.minecraft.client.MinecraftClient");
+            java.lang.reflect.Method getInstance = mcClass.getMethod("getInstance");
+            Object mc = getInstance.invoke(null);
+            if (mc == null) {
+                System.out.println("GeminiBot: MinecraftClient instance is null, cannot send command: " + cmd);
+                return;
+            }
 
-        System.out.println("GeminiBot: sending command -> " + cmd);
-        // send chat message so Baritone (if present) executes it
-        client.player.sendChatMessage(cmd);
+            // Attempt to get the player field and call sendChatMessage
+            java.lang.reflect.Field playerField = mcClass.getField("player");
+            Object player = playerField.get(mc);
+            if (player == null) {
+                System.out.println("GeminiBot: player is null, cannot send command: " + cmd);
+                return;
+            }
+
+            Class<?> playerClass = player.getClass();
+            java.lang.reflect.Method sendChatMessage = null;
+            try {
+                sendChatMessage = playerClass.getMethod("sendChatMessage", String.class);
+            } catch (NoSuchMethodException ex) {
+                // Older/newer mappings might have different method names; fallback to tryMethod by name
+                for (java.lang.reflect.Method m : playerClass.getMethods()) {
+                    if (m.getName().toLowerCase().contains("chat") && m.getParameterCount() == 1 && m.getParameterTypes()[0] == String.class) {
+                        sendChatMessage = m;
+                        break;
+                    }
+                }
+            }
+
+            if (sendChatMessage == null) {
+                System.out.println("GeminiBot: could not find sendChatMessage method on player, cannot send: " + cmd);
+                return;
+            }
+
+            sendChatMessage.invoke(player, cmd);
+            System.out.println("GeminiBot: sent command -> " + cmd);
+        } catch (ClassNotFoundException e) {
+            System.out.println("GeminiBot: MinecraftClient class not found (not running in client env): " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("GeminiBot: failed to send command via reflection: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }
