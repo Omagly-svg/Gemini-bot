@@ -1,0 +1,4 @@
+Build trigger created by GitHub Copilot Chat Assistant to start CI.
+Timestamp: 2026-06-10T07:18:00Z
+
+This file was added solely to trigger GitHub Actions workflows. Remove if desired.
