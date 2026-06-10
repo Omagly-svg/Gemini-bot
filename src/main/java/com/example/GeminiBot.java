@@ -4,8 +4,6 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.minecraft.client.MinecraftClient;
 
-import baritone.api.BaritoneAPI;
-
 public class GeminiBot implements ClientModInitializer {
 
     @Override
@@ -33,30 +31,24 @@ public class GeminiBot implements ClientModInitializer {
             String[] parts = command.split(" ");
             String block = parts[1];
 
-            BaritoneAPI.getProvider()
-                    .getPrimaryBaritone()
-                    .getCommandManager()
-                    .execute("#mine " + block);
+            // TODO: Implement mining command
+            System.out.println("Mining command: " + block);
         }
 
-        // 🧍 FOLLOW PLAYER (your "kill" command)
+        // 🧍 FOLLOW PLAYER
         if (lower.startsWith("kill ")) {
 
             String player = command.substring(5).trim();
 
-            BaritoneAPI.getProvider()
-                    .getPrimaryBaritone()
-                    .getCommandManager()
-                    .execute("#follow player " + player);
+            // TODO: Implement follow command
+            System.out.println("Following player: " + player);
         }
 
         // 🛑 STOP ALL
         if (lower.equals("stop")) {
 
-            BaritoneAPI.getProvider()
-                    .getPrimaryBaritone()
-                    .getCommandManager()
-                    .execute("#stop");
+            // TODO: Implement stop command
+            System.out.println("Stopping all actions");
         }
     }
 }
